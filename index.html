@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+  }
+
+  input, select {
+    width: 200px;
+    padding: 5px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+
+  h2 {
+    color: #007bff;
+    text-align: center;
+    margin-bottom: 20px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  button {
+    padding: 10px 15px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 1em;
+    margin-top: 10px;
+    transition: background-color 0.3s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  button:hover {
+    background-color: #218838;
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  #resultado {
+    margin-top: 20px;
+    font-size: 1.2em;
+    color: #555;
+    background-color: #e9ecef;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 400px;
+    word-wrap: break-word;
+    margin: auto;
+  }
+
+  form {
+    max-width: 400px;
+    margin-bottom: 20px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: auto;
+  }
+</style>
+
+<body>
+  <h2>Predicción Banking</h2>
+  <form onsubmit="predecir(event)">
+    <label for="age">Edad:</label><br>
+    <input type="number" id="age" value="35"><br><br>
+
+    <label for="balance">Balance:</label><br>
+    <input type="number" id="balance" value="1200"><br><br>
+
+    <label for="duration">Duración del Contacto (segundos):</label><br>
+    <input type="number" id="duration" value="240"><br><br>
+
+    <label for="campaign">Campaña (contactos durante esta campaña):</label><br>
+    <input type="number" id="campaign" value="2"><br><br>
+
+    <label for="job">Trabajo:</label><br>
+    <input type="text" id="job" value="blue-collar"><br><br>
+
+    <label for="marital">Estado Civil:</label><br>
+    <select id="marital">
+      <option value="single">Single</option>
+      <option value="married">Married</option>
+      <option value="divorced">Divorced</option>
+    </select><br><br>
+
+    <label for="education">Nivel Educativo:</label><br>
+    <select id="education">
+      <option value="primary">Primary</option>
+      <option value="secondary">Secondary</option>
+      <option value="university">University</option>
+    </select><br><br>
+
+    <label for="pdays">Dias de paga:</label><br>
+    <input type="number" id="pdays" value="-1"><br><br>
+
+    <label for="loan">Préstamo:</label><br>
+    <input type="text" id="loan" value="no"><br><br>
+
+    <label for="month">Mes:</label><br>
+    <input type="text" id="month" value="may"><br><br>
+
+    <label for="poutcome">Poutcome:</label><br>
+    <input type="text" id="poutcome" value="unknown"><br><br>
+
+    <label for="housing">Vivienda:</label><br>
+    <input type="text" id="housing" value="yes"><br><br>
+
+    <label for="default">Incumplimiento:</label><br>
+    <input type="text" id="default" value="no"><br><br>
+
+    <label for="previous">Anterior:</label><br>
+    <input type="number" id="previous" value="0"><br><br>
+
+    <label for="contact">Contacto:</label><br>
+    <input type="text" id="contact" value="cellular"><br><br>
+
+    <label for="day">Día:</label><br>
+    <input type="text" id="day" value="5"><br><br>
+
+    <button type="submit">Enviar Datos</button>
+  </form>
+  <h3 id="resultado">Esperando datos...</h3>
+  <script>
+    const API_ENDPOINT = '/predict';
+
+    async function predecir(e) {
+      // EVITA QUE LA PÁGINA SE RECARGUE AL ENVIAR EL FORMULARIO
+      e.preventDefault();
+
+      // 1. Leer los valores de los campos
+      const data = {
+                age: parseInt(document.getElementById('age').value),
+                balance: parseInt(document.getElementById('balance').value),
+                duration: parseInt(document.getElementById('duration').value),
+                campaign: parseInt(document.getElementById('campaign').value),
+                job: document.getElementById('job').value,
+                marital: document.getElementById('marital').value,
+                education: document.getElementById('education').value,
+                pdays: parseInt(document.getElementById('pdays').value),
+                loan: document.getElementById('loan').value,
+                month: document.getElementById('month').value,
+                poutcome: document.getElementById('poutcome').value,
+                housing: document.getElementById('housing').value,
+                default: document.getElementById('default').value,
+                previous: parseInt(document.getElementById('previous').value),
+                contact: document.getElementById('contact').value,
+                day: parseInt(document.getElementById('day').value)
+            };
+            
+            const resultadoElement = document.getElementById('resultado');
+            resultadoElement.innerHTML = `Cargando...`;
+            
+      // 2. Llamar a la API
+      try {
+        const res = await fetch(API_ENDPOINT, { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (!res.ok) {
+          throw new Error(`Error en la API: ${res.statusText}`);
+        }
+
+        const result = await res.json();
+
+        // 3. Mostrar el resultado
+        resultadoElement.innerHTML = `
+    Predicción: <b>${result.resultado}</b><br>
+    Valor numérico: ${result.prediccion}<br>
+    Probabilidad (Score): <b>${(result.score_probabilidad * 100).toFixed(2)}%</b> 
+`;
+      } catch (error) {
+        resultadoElement.textContent = `Error: ${error.message}`;
+        console.error('Error al hacer la predicción:', error);
+      }
+    }
+  </script>
+</body>
+</html>
