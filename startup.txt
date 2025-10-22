@@ -1,19 +1,4 @@
 #!/bin/bash
-
-Este script se ejecuta en el App Service para iniciar la aplicación.
-
-1. Navega al directorio raíz donde están app.py y antenv.
-
 cd /home/site/wwwroot
-
-2. Activa el entorno virtual creado por Oryx.
-
 source antenv/bin/activate
-
-3. Inicia Gunicorn usando el comando que ya tenías.
-
-El comando ahora se ejecuta con el entorno virtual activo, asegurando
-
-que encuentre todas las dependencias (Flask, Gunicorn, etc.).
-
 gunicorn --bind 0.0.0.0 --timeout 60 --workers 4 app:app
