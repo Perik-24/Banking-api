@@ -136,7 +136,7 @@
   </form>
   <h3 id="resultado">Esperando datos...</h3>
   <script>
-    const API_ENDPOINT = '/predict';
+    const API_URL = 'https://banking-api-fvekgra5cxcuf3fd.mexicocentral-01.azurewebsites.net/predict';
 
     async function predecir(e) {
       // EVITA QUE LA PÁGINA SE RECARGUE AL ENVIAR EL FORMULARIO
@@ -167,7 +167,7 @@
             
       // 2. Llamar a la API
       try {
-        const res = await fetch(API_ENDPOINT, { 
+        const res = await fetch(API_URL, { 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
