@@ -2,12 +2,26 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import joblib
 import pandas as pd
+from pymongo import MongoClient
+import os
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
 
 # Cargar modelo entrenado
 model = joblib.load("modelo_banking.pkl")
+
+# === CONEXIÓN A MONGODB ATLAS ===
+uri = os.environ.get('MONGODB_URI')
+if not uri:
+    raise ValueError("Falta MONGODB_URI en variables de entorno")
+
+client = MongoClient(uri)
+db = client.banking_predictions
+collection = db.predictions
+# ===================================
+
 
 @app.route('/')
 def home():
