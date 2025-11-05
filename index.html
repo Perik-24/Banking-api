@@ -15,7 +15,8 @@
     color: #333;
   }
 
-  input, select {
+  input,
+  select {
     width: 200px;
     padding: 5px;
     margin-bottom: 10px;
@@ -144,30 +145,30 @@
 
       // 1. Leer los valores de los campos
       const data = {
-                age: parseInt(document.getElementById('age').value),
-                balance: parseInt(document.getElementById('balance').value),
-                duration: parseInt(document.getElementById('duration').value),
-                campaign: parseInt(document.getElementById('campaign').value),
-                job: document.getElementById('job').value,
-                marital: document.getElementById('marital').value,
-                education: document.getElementById('education').value,
-                pdays: parseInt(document.getElementById('pdays').value),
-                loan: document.getElementById('loan').value,
-                month: document.getElementById('month').value,
-                poutcome: document.getElementById('poutcome').value,
-                housing: document.getElementById('housing').value,
-                default: document.getElementById('default').value,
-                previous: parseInt(document.getElementById('previous').value),
-                contact: document.getElementById('contact').value,
-                day: parseInt(document.getElementById('day').value)
-            };
-            
-            const resultadoElement = document.getElementById('resultado');
-            resultadoElement.innerHTML = `Cargando...`;
-            
+        age: parseInt(document.getElementById('age').value),
+        balance: parseInt(document.getElementById('balance').value),
+        duration: parseInt(document.getElementById('duration').value),
+        campaign: parseInt(document.getElementById('campaign').value),
+        job: document.getElementById('job').value,
+        marital: document.getElementById('marital').value,
+        education: document.getElementById('education').value,
+        pdays: parseInt(document.getElementById('pdays').value),
+        loan: document.getElementById('loan').value,
+        month: document.getElementById('month').value,
+        poutcome: document.getElementById('poutcome').value,
+        housing: document.getElementById('housing').value,
+        default: document.getElementById('default').value,
+        previous: parseInt(document.getElementById('previous').value),
+        contact: document.getElementById('contact').value,
+        day: parseInt(document.getElementById('day').value)
+      };
+
+      const resultadoElement = document.getElementById('resultado');
+      resultadoElement.innerHTML = `Cargando...`;
+
       // 2. Llamar a la API
       try {
-        const res = await fetch(API_URL, { 
+        const res = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
@@ -183,7 +184,7 @@
         resultadoElement.innerHTML = `
     Predicción: <b>${result.resultado}</b><br>
     Valor numérico: ${result.prediccion}<br>
-    Probabilidad (Score): <b>${(result.score_probabilidad * 100).toFixed(2)}%</b> 
+    Probabilidad (Score): <b>${(result.score_probabilidad !== undefined ? result.score_probabilidad * 100 : 0).toFixed(2)}%</b> 
 `;
       } catch (error) {
         resultadoElement.textContent = `Error: ${error.message}`;
@@ -192,4 +193,5 @@
     }
   </script>
 </body>
+
 </html>

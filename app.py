@@ -30,7 +30,7 @@ def predict():
     try:
         data = request.get_json()
 
-        # === DATAFRAME PARA EL MODELO ===
+        # === CREAR DATAFRAME PARA EL MODELO ===
         input_df = pd.DataFrame([{
             'age': data.get('age'),
             'job': data.get('job'),
@@ -45,6 +45,8 @@ def predict():
             'month': data.get('month'),
             'duration': data.get('duration'),
             'campaign': data.get('campaign'),
+            'pdays': data.get('pdays', -1),
+            'previous': data.get('previous', 0),
             'poutcome': data.get('poutcome', 'unknown')
         }])
 
@@ -57,7 +59,7 @@ def predict():
         document = {
             **data,
             "prediction": pred,
-            "probability": round(prob, 4),
+            "score_probabilidad": round(prob, 4),  # ← ESTE CAMPO ES CLAVE
             "resultado": resultado,
             "timestamp": datetime.utcnow().isoformat(),
             "source": "AWS Frontend"
@@ -65,14 +67,15 @@ def predict():
         collection.insert_one(document)
         # ===============================
 
+        # === RESPUESTA AL HTML ===
         return jsonify({
             "prediccion": pred,
-            "score_probabilidad": round(prob, 4),
+            "score_probabilidad": round(prob, 4),  # ← DEVUELVE ESTO
             "resultado": resultado
         })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-if __name__ == '_main_':
+if __name__ == '__main__':
     app.run()
