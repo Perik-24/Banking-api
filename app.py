@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 
 app = Flask(__name__)
-CORS(app, origins=["http://18.222.131.92", "*"])
+CORS(app, origins=["http://18.190.157.12", "*"])
 
 # Cargar modelo (con error handling)
 try:
