@@ -9,7 +9,7 @@ from pymongo.errors import PyMongoError
 
 import logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("banking-api")
+logger = logging.getLogger("Banking-api")
 
 app = Flask(__name__)
 CORS(app, origins=["http://18.190.157.12"])
@@ -23,6 +23,8 @@ except Exception as e:
     model = None
 
 # Conexión MongoDB (con error handling)
+client = None
+collection = None
 try:
     uri = os.environ.get('MONGODB_URI')
     if not uri:
@@ -90,10 +92,9 @@ def predict():
         })
 
     except Exception as e:
-        logger.error(f"Error MongoDB: {e}")
-        client = None
-        # AGREGAR:
-        setattr(client, 'error_mongo', str(e))
+        print(f"Error predict: {e}")
+        return jsonify({"error": str(e)}), 500
+    
 
 if __name__ == '__main__':
     app.run()
