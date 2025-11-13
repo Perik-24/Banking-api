@@ -5,4 +5,5 @@ joblib
 flask
 flask-cors
 gunicorn
-pymongo[srv]
+pymongo[srv]>=4.0.0
+certifi>=2023.7.22
