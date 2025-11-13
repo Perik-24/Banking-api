@@ -5,9 +5,10 @@ import pandas as pd
 from pymongo import MongoClient
 import os
 from datetime import datetime
+from pymongo.errors import PyMongoError
 
 app = Flask(__name__)
-CORS(app, origins=["http://18.190.157.12", "*"])
+CORS(app, origins=["http://18.190.157.12"])
 
 # Cargar modelo (con error handling)
 try:
@@ -22,7 +23,8 @@ try:
     uri = os.environ.get('MONGODB_URI')
     if not uri:
         raise ValueError("Falta MONGODB_URI")
-    client = MongoClient(uri)
+    client = MongoClient(uri, serverSelectionTimeoutMS=3000)
+    client.server_info()  # esto lanza error si no hay conexión real
     db = client.banking_predictions
     collection = db.predictions
     print("MongoDB conectado OK")
@@ -72,8 +74,10 @@ def predict():
                 document = {**data, "prediction": pred, "score_probabilidad": round(prob, 4), "resultado": resultado, "timestamp": datetime.utcnow().isoformat()}
                 collection.insert_one(document)
                 print("Guardado en MongoDB OK")
+            except PyMongoError as mongo_e:
+                print(f"Error guardado MongoDB: {mongo_e}")
             except Exception as mongo_e:
-                print(f"Error guardado: {mongo_e}")
+                print(f"Error inesperado guardado Mongo: {mongo_e}")
 
         return jsonify({
             "prediccion": pred,
