@@ -7,15 +7,19 @@ import os
 from datetime import datetime
 from pymongo.errors import PyMongoError
 
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("banking-api")
+
 app = Flask(__name__)
 CORS(app, origins=["http://18.190.157.12"])
 
 # Cargar modelo (con error handling)
 try:
     model = joblib.load("modelo_banking.pkl")
-    print("Modelo cargado OK")
+    logger.info("Modelo cargado OK")
 except Exception as e:
-    print(f"Error modelo: {e}")
+    logger.error(f"Error modelo: {e}")
     model = None
 
 # Conexión MongoDB (con error handling)
@@ -24,17 +28,17 @@ try:
     if not uri:
         raise ValueError("Falta MONGODB_URI")
     client = MongoClient(uri, serverSelectionTimeoutMS=3000)
-    client.server_info()  # esto lanza error si no hay conexión real
+    client.server_info()
     db = client.banking_predictions
     collection = db.predictions
-    print("MongoDB conectado OK")
+    logger.info("MongoDB conectado OK")
 except Exception as e:
-    print(f"Error MongoDB: {e}")
+    logger.error(f"Error MongoDB: {e}")
     client = None
 
 @app.route('/')
 def home():
-    return f"API viva! Modelo: {'OK' if model else 'FAIL'}. MongoDB: {'OK' if client else 'FAIL'}"
+    return f"API viva! Modelo: {'OK' if model else 'FAIL'}. MongoDB: {'OK' if client else 'FAIL'}.<br>Error Mongo: {getattr(client, 'error_mongo', 'No hay error')}"
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -86,8 +90,10 @@ def predict():
         })
 
     except Exception as e:
-        print(f"Error predict: {e}")
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Error MongoDB: {e}")
+        client = None
+        # AGREGAR:
+        setattr(client, 'error_mongo', str(e))
 
 if __name__ == '__main__':
     app.run()
