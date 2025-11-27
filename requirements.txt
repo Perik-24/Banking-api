@@ -7,3 +7,5 @@ flask-cors
 gunicorn
 pymongo[srv]>=4.0.0
 certifi>=2023.7.22
+tensorflow
+matplotlib

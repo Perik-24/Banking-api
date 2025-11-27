@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados y Gráficas - Banking API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f5f7fb; }
+        .container { max-width: 1200px; margin: 20px auto; background: #fff; padding: 24px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        h1 { margin: 0 0 10px; color: #2d3748; }
+        .subtitle { color: #718096; margin-bottom: 20px; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .btn { padding: 10px 16px; background: #4a5568; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+        .btn:hover { background: #2d3748; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap: 16px; margin-top: 12px; }
+        .card { background: #f9fafb; border-radius: 10px; padding: 16px; border-left: 5px solid #805ad5; }
+        .card h3 { margin: 0 0 8px; color: #4a5568; }
+        .value { font-size: 20px; font-weight: 700; margin: 6px 0; }
+        .positive { color: #2f855a; }
+        .negative { color: #c53030; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(340px,1fr)); gap: 18px; margin-top: 20px; }
+        .plot { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; }
+        .plot h4 { margin: 0 0 8px; font-weight: 600; color: #2d3748; }
+        .plot img { width: 100%; border-radius: 8px; border: 1px solid #edf2f7; }
+        .error { background: #fff5f5; color: #c53030; padding: 12px; border-radius: 8px; border-left: 5px solid #c53030; }
+    </style>
+    <script>
+        async function init() {
+            const inputStr = localStorage.getItem('banking_input');
+            const apiBase = localStorage.getItem('api_base') || 'http://localhost:5000';
+            const tipoModelo = localStorage.getItem('tipo_modelo') || 'both';
+            const infoEl = document.getElementById('info');
+            const resEl = document.getElementById('resultados');
+            const plotsEl = document.getElementById('plots');
+
+            if (!inputStr) {
+                resEl.innerHTML = '<div class="error">No se encontraron datos de entrada. Vuelve a la página principal e ingresa los datos.</div>';
+                return;
+            }
+
+            const data = JSON.parse(inputStr);
+            infoEl.textContent = `Procesando predicción con modelo: ${tipoModelo.toUpperCase()}...`;
+
+            try {
+                let endpoint = '';
+                if (tipoModelo === 'svm') {
+                    endpoint = '/predict_svm';
+                } else if (tipoModelo === 'dl') {
+                    endpoint = '/predict_dl';
+                } else {
+                    endpoint = '/predict_both';
+                }
+
+                const resp = await fetch(apiBase + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!resp.ok) throw new Error('Error de API: ' + resp.statusText);
+                const result = await resp.json();
+
+                // Renderizar según tipo de modelo
+                if (tipoModelo === 'svm') {
+                    renderSVMOnly(result, resEl, plotsEl, apiBase);
+                } else if (tipoModelo === 'dl') {
+                    renderDLOnly(result, resEl, plotsEl, apiBase);
+                } else {
+                    renderBoth(result, resEl, plotsEl, apiBase);
+                }
+
+                infoEl.textContent = 'Resultados listos.';
+                localStorage.removeItem('banking_input');
+                localStorage.removeItem('tipo_modelo');
+
+            } catch (err) {
+                resEl.innerHTML = `<div class="error">${err.message}</div>`;
+            }
+        }
+
+        function renderSVMOnly(result, resEl, plotsEl, apiBase) {
+            const pred = result.prediccion;
+            const res = result.resultado;
+            const prob = result.score_probabilidad;
+            const graficas = result.graficas || {};
+
+            resEl.innerHTML = `
+                <div class="cards">
+                    <div class="card">
+                        <h3>🟢 Modelo SVM</h3>
+                        <div class="value ${pred === 1 ? 'positive' : 'negative'}">${res || 'N/D'}</div>
+                        <div>Probabilidad: <b>${prob !== undefined ? (prob * 100).toFixed(2) : 'N/D'}%</b></div>
+                    </div>
+                </div>
+            `;
+
+            plotsEl.innerHTML = `
+                <div class="grid">
+                    <div class="plot">
+                        <h4>SVM - Matriz de Confusión</h4>
+                        <img src="${apiBase + (graficas.confusion_matrix || '/static/plots/svm_confusion.png')}" alt="SVM Confusion Matrix">
+                    </div>
+                    <div class="plot">
+                        <h4>SVM - Curva ROC</h4>
+                        <img src="${apiBase + (graficas.roc_curve || '/static/plots/svm_roc.png')}" alt="SVM ROC Curve">
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDLOnly(result, resEl, plotsEl, apiBase) {
+            const pred = result.prediccion;
+            const res = result.resultado;
+            const prob = result.score_probabilidad;
+            const graficas = result.graficas || {};
+
+            resEl.innerHTML = `
+                <div class="cards">
+                    <div class="card">
+                        <h3>🔵 Modelo Deep Learning</h3>
+                        <div class="value ${pred === 1 ? 'positive' : 'negative'}">${res || 'N/D'}</div>
+                        <div>Probabilidad: <b>${prob !== undefined ? (prob * 100).toFixed(2) : 'N/D'}%</b></div>
+                    </div>
+                </div>
+            `;
+
+            plotsEl.innerHTML = `
+                <div class="grid">
+                    <div class="plot">
+                        <h4>DL - Matriz de Confusión</h4>
+                        <img src="${apiBase + (graficas.confusion_matrix || '/static/plots/dl_confusion.png')}" alt="DL Confusion Matrix">
+                    </div>
+                    <div class="plot">
+                        <h4>DL - Curva ROC</h4>
+                        <img src="${apiBase + (graficas.roc_curve || '/static/plots/dl_roc.png')}" alt="DL ROC Curve">
+                    </div>
+                    <div class="plot">
+                        <h4>DL - Loss de Entrenamiento</h4>
+                        <img src="${apiBase + (graficas.training_loss || '/static/plots/dl_loss.png')}" alt="DL Training Loss">
+                    </div>
+                    <div class="plot">
+                        <h4>DL - Accuracy de Entrenamiento</h4>
+                        <img src="${apiBase + (graficas.training_accuracy || '/static/plots/dl_accuracy.png')}" alt="DL Training Accuracy">
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderBoth(result, resEl, plotsEl, apiBase) {
+            const svm = result.svm || {};
+            const dl = result.deep_learning || {};
+            const ens = result.ensemble || null;
+
+            resEl.innerHTML = `
+                <div class="cards">
+                    <div class="card">
+                        <h3>🟢 Modelo SVM</h3>
+                        <div class="value ${svm.prediccion === 1 ? 'positive' : 'negative'}">${svm.resultado || 'N/D'}</div>
+                        <div>Probabilidad: <b>${svm.score_probabilidad !== undefined ? (svm.score_probabilidad * 100).toFixed(2) : 'N/D'}%</b></div>
+                    </div>
+                    <div class="card">
+                        <h3>🔵 Modelo Deep Learning</h3>
+                        <div class="value ${dl.prediccion === 1 ? 'positive' : 'negative'}">${dl.resultado || 'N/D'}</div>
+                        <div>Probabilidad: <b>${dl.score_probabilidad !== undefined ? (dl.score_probabilidad * 100).toFixed(2) : 'N/D'}%</b></div>
+                    </div>
+                    ${ens ? `<div class="card"> 
+                        <h3>🔴 Ensemble (Promedio)</h3>
+                        <div class="value ${ens.prediccion === 1 ? 'positive' : 'negative'}">${ens.resultado}</div>
+                        <div>Probabilidad: <b>${(ens.score_probabilidad * 100).toFixed(2)}%</b></div>
+                    </div>` : ''}
+                </div>
+            `;
+
+            const gSVM = svm.graficas || {};
+            const gDL = dl.graficas || {};
+
+            plotsEl.innerHTML = `
+                <div class="grid">
+                    <div class="plot">
+                        <h4>SVM - Matriz de Confusión</h4>
+                        <img src="${apiBase + (gSVM.confusion_matrix || '/static/plots/svm_confusion.png')}" alt="SVM Confusion Matrix">
+                    </div>
+                    <div class="plot">
+                        <h4>SVM - Curva ROC</h4>
+                        <img src="${apiBase + (gSVM.roc_curve || '/static/plots/svm_roc.png')}" alt="SVM ROC Curve">
+                    </div>
+                    <div class="plot">
+                        <h4>DL - Matriz de Confusión</h4>
+                        <img src="${apiBase + (gDL.confusion_matrix || '/static/plots/dl_confusion.png')}" alt="DL Confusion Matrix">
+                    </div>
+                    <div class="plot">
+                        <h4>DL - Curva ROC</h4>
+                        <img src="${apiBase + (gDL.roc_curve || '/static/plots/dl_roc.png')}" alt="DL ROC Curve">
+                    </div>
+                    <div class="plot">
+                        <h4>DL - Loss de Entrenamiento</h4>
+                        <img src="${apiBase + (gDL.training_loss || '/static/plots/dl_loss.png')}" alt="DL Training Loss">
+                    </div>
+                    <div class="plot">
+                        <h4>DL - Accuracy de Entrenamiento</h4>
+                        <img src="${apiBase + (gDL.training_accuracy || '/static/plots/dl_accuracy.png')}" alt="DL Training Accuracy">
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</head>
+<body onload="init()">
+    <div class="container">
+        <div class="topbar">
+            <div>
+                <h1>Resultados y Gráficas</h1>
+                <div id="info" class="subtitle">Esperando datos...</div>
+            </div>
+            <div>
+                <button class="btn" onclick="window.location.href='index.html'">← Volver</button>
+            </div>
+        </div>
+
+        <div id="resultados"></div>
+        <div id="plots" style="margin-top: 20px;"></div>
+    </div>
+</body>
+</html>
