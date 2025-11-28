@@ -31,8 +31,10 @@ jobs:
           pip install -r requirements.txt
 
       - name: Verify AZURE_WEBAPP_PUBLISH_PROFILE secret exists
+        env:
+          PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         run: |
-          if [ -z "${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}" ]; then
+          if [ -z "$PUBLISH_PROFILE" ]; then
             echo "::error::The secret AZURE_WEBAPP_PUBLISH_PROFILE is not set. Please add it in GitHub Secrets."
             echo "To obtain the publish profile:"
             echo "1. Go to Azure Portal -> Your App Service -> Overview -> Get publish profile"
