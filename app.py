@@ -9,17 +9,19 @@ from datetime import datetime
 from pymongo.errors import PyMongoError
 import threading
 
-# Reducir logs ruidosos de TensorFlow antes de que se importe
-os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '2')  # 0 = all, 1 = filter INFO, 2 = filter INFO & WARNING, 3 = filter ERROR
-# Si quieres desactivar oneDNN (mensajes o resultados numéricos diferentes), descomenta:
-# os.environ.setdefault('TF_ENABLE_ONEDNN_OPTS', '0')
+try:
+    from tensorflow.keras.models import load_model
+    TENSORFLOW_AVAILABLE = True
+except ImportError:
+    TENSORFLOW_AVAILABLE = False
+    load_model = None
 
 import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("Banking-api")
 
 app = Flask(__name__)
-CORS(app, origins=["http://18.190.157.12/Graficas.html"])
+CORS(app, resources={r"/*": {"origins": ["http://18.190.157.12"]}})
 
 # Cargar modelo SVM (con error handling)
 try:
@@ -29,46 +31,19 @@ except Exception as e:
     logger.error(f"Error modelo SVM: {e}")
     model_svm = None
 
-# Variables para modelo DL (lazy load)
+# Cargar modelo DL (con error handling)
 model_dl = None
 preprocessor_dl = None
-_dl_lock = threading.Lock()
-_tensorflow_imported = False
-
-def load_dl_model():
-    """Carga TensorFlow y el modelo DL de forma perezosa y thread-safe."""
-    global model_dl, preprocessor_dl, _tensorflow_imported
-    if model_dl is not None and preprocessor_dl is not None:
-        return True
-    with _dl_lock:
-        # doble-check después del lock
-        if model_dl is not None and preprocessor_dl is not None:
-            return True
-        try:
-            # Importar tensorflow y funciones dentro de la función para evitar costo al inicio
-            from tensorflow.keras.models import load_model as tf_load_model
-            _tensorflow_imported = True
-        except Exception as e:
-            logger.error(f"TensorFlow no disponible o error import: {e}")
-            _tensorflow_imported = False
-            return False
-
-        try:
-            # Cargar artefactos del disco
-            model = tf_load_model("modelo_dl_banking.h5")
-            prep = joblib.load("preprocessor_dl.pkl")
-            # asignar a variables globales
-            globals()['model_dl'] = model
-            globals()['preprocessor_dl'] = prep
-            logger.info("✓ Modelo DL cargado OK (lazy-loaded)")
-            return True
-        except Exception as e:
-            logger.error(f"Error cargando modelo DL o preprocessor: {e}")
-            globals()['model_dl'] = None
-            globals()['preprocessor_dl'] = None
-            return False
-
-# No intentamos cargar TensorFlow aquí — lo haremos on-demand en load_dl_model()
+try:
+    if not TENSORFLOW_AVAILABLE:
+        raise ImportError("TensorFlow no está disponible")
+    model_dl = load_model("modelo_dl_banking.h5")
+    preprocessor_dl = joblib.load("preprocessor_dl.pkl")
+    logger.info("✓ Modelo DL cargado OK")
+except Exception as e:
+    logger.error(f"Error modelo DL: {e}")
+    model_dl = None
+    preprocessor_dl = None
 
 # Conexión MongoDB (con error handling)
 client = None
