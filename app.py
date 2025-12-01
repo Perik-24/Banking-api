@@ -9,12 +9,7 @@ from datetime import datetime
 from pymongo.errors import PyMongoError
 import threading
 
-try:
-    from tensorflow.keras.models import load_model
-    TENSORFLOW_AVAILABLE = True
-except ImportError:
-    TENSORFLOW_AVAILABLE = False
-    load_model = None
+os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '2')
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -31,19 +26,37 @@ except Exception as e:
     logger.error(f"Error modelo SVM: {e}")
     model_svm = None
 
-# Cargar modelo DL (con error handling)
 model_dl = None
 preprocessor_dl = None
-try:
-    if not TENSORFLOW_AVAILABLE:
-        raise ImportError("TensorFlow no está disponible")
-    model_dl = load_model("modelo_dl_banking.h5")
-    preprocessor_dl = joblib.load("preprocessor_dl.pkl")
-    logger.info("✓ Modelo DL cargado OK")
-except Exception as e:
-    logger.error(f"Error modelo DL: {e}")
-    model_dl = None
-    preprocessor_dl = None
+_dl_lock = threading.Lock()
+
+def load_dl_model():
+    """Carga TensorFlow y el modelo DL de forma perezosa y thread-safe."""
+    global model_dl, preprocessor_dl
+    if model_dl is not None and preprocessor_dl is not None:
+        return True
+    with _dl_lock:
+        if model_dl is not None and preprocessor_dl is not None:
+            return True
+        try:
+            # Importar tensorflow dentro de la función (evita costoso import en arranque)
+            from tensorflow.keras.models import load_model as tf_load_model
+        except Exception as e:
+            logger.error(f"TensorFlow no disponible o error import: {e}")
+            return False
+
+        try:
+            m = tf_load_model("modelo_dl_banking.h5")
+            p = joblib.load("preprocessor_dl.pkl")
+            globals()['model_dl'] = m
+            globals()['preprocessor_dl'] = p
+            logger.info("✓ Modelo DL cargado OK (lazy-loaded)")
+            return True
+        except Exception as e:
+            logger.error(f"Error cargando modelo DL o preprocessor: {e}")
+            globals()['model_dl'] = None
+            globals()['preprocessor_dl'] = None
+            return False
 
 # Conexión MongoDB (con error handling)
 client = None
