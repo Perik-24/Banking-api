@@ -146,7 +146,7 @@ def predict_svm():
         pred = 1 if prob >= 0.5 else 0
         resultado = "✅ Cliente aceptará el producto" if pred == 1 else "❌ Cliente no aceptará"
 
-        if client and collection:
+        if client is not None and collection is not None:
             try:
                 document = {
                     **data,
@@ -219,7 +219,7 @@ def predict_dl():
         pred = 1 if prob >= 0.5 else 0
         resultado = "✅ Cliente aceptará el producto" if pred == 1 else "❌ Cliente no aceptará"
 
-        if client and collection:
+        if client is not None and collection is not None:
             try:
                 document = {
                     **data,
@@ -361,7 +361,7 @@ def predict_both():
         except Exception as e:
             logger.error(f"Error calculando ensemble: {e}", exc_info=True)
 
-        if client and collection:
+        if client is not None and collection is not None:
             try:
                 collection.insert_one({**results, "_saved_at": datetime.utcnow()})
                 logger.info("Predicción completa guardada en MongoDB")
